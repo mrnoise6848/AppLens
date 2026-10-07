@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.noise.applens.domain.analysis.AppAnalysis
 import com.noise.applens.domain.model.AppTechnicalInfo
 import com.noise.applens.domain.model.InstalledApp
+import com.noise.applens.domain.model.LibraryInfo
 import com.noise.applens.ui.components.AppIcon
 import com.noise.applens.ui.components.InfoBanner
 import com.noise.applens.ui.components.ScreenHeader
@@ -42,6 +43,7 @@ fun AppDetailScreen(
     analysis: AppAnalysis?,
     iconLoader: (String) -> ImageBitmap?,
     loadTechnicalInfo: suspend (String) -> AppTechnicalInfo?,
+    loadLibraries: suspend (String) -> List<LibraryInfo>,
     onBack: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
@@ -76,6 +78,10 @@ fun AppDetailScreen(
             TechnicalSection(
                 packageName = analysis.app.packageName,
                 load = loadTechnicalInfo,
+            )
+            LibrariesSection(
+                packageName = analysis.app.packageName,
+                load = loadLibraries,
             )
             WhyReviewSection(analysis = analysis)
 

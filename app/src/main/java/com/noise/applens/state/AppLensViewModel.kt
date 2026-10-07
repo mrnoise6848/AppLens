@@ -6,13 +6,16 @@ import androidx.lifecycle.viewModelScope
 import com.noise.applens.data.AppDiscoveryDataSource
 import com.noise.applens.data.AppIconCache
 import com.noise.applens.data.AppIndexStore
+import com.noise.applens.data.AppLibraryEvidenceReader
 import com.noise.applens.data.AppTechnicalInfoReader
 import com.noise.applens.domain.analysis.AppAnalysis
 import com.noise.applens.domain.analysis.AppAnalysisEngine
 import com.noise.applens.domain.analysis.AppFilter
 import com.noise.applens.domain.analysis.AppSort
+import com.noise.applens.domain.library.LibraryAnalyzer
 import com.noise.applens.domain.model.AppTechnicalInfo
 import com.noise.applens.domain.model.InstalledApp
+import com.noise.applens.domain.model.LibraryInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,6 +41,8 @@ class AppLensViewModel(application: Application) : AndroidViewModel(application)
     private val iconCache = AppIconCache(application.packageManager)
     private val analysisEngine = AppAnalysisEngine(application.packageManager)
     private val technicalInfoReader = AppTechnicalInfoReader(application.packageManager)
+    private val libraryEvidenceReader = AppLibraryEvidenceReader(application.packageManager)
+    private val libraryAnalyzer = LibraryAnalyzer()
 
     private val _uiState = MutableStateFlow(AppLensUiState())
     val uiState: StateFlow<AppLensUiState> = _uiState.asStateFlow()
@@ -140,6 +145,15 @@ class AppLensViewModel(application: Application) : AndroidViewModel(application)
     /** Advanced technical metadata, read only when the user expands the section (spec §10). */
     suspend fun technicalInfo(packageName: String): AppTechnicalInfo? =
         technicalInfoReader.read(packageName)
+
+    /**
+     * Library/SDK overview derived from manifest evidence only (spec §17). Read on demand so the
+     * inventory scan never pays for it.
+     */
+    suspend fun libraries(packageName: String): List<LibraryInfo> {
+        val evidence = libraryEvidenceReader.read(packageName) ?: return emptyList()
+        return libraryAnalyzer.analyze(evidence)
+    }
 
     // ------------------------------------------------------------------------------- list state
 

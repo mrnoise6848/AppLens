@@ -87,6 +87,7 @@ fun AppLensApp(viewModel: AppLensViewModel) {
                     loading = indexed == null && !attempted,
                     iconLoader = viewModel::loadIcon,
                     loadTechnicalInfo = viewModel::technicalInfo,
+                    loadLibraries = viewModel::libraries,
                     onBack = { navigator.pop() },
                     onRetry = {
                         viewModel.refresh(force = true)
