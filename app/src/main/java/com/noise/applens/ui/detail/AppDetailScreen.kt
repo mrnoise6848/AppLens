@@ -69,8 +69,9 @@ fun AppDetailScreen(
                 .padding(bottom = 32.dp),
         ) {
             DetailSummary(analysis = analysis, iconLoader = iconLoader)
-            WhyReviewSection(analysis = analysis)
             PermissionSection(analysis = analysis)
+            SdkSection(app = analysis.app)
+            WhyReviewSection(analysis = analysis)
 
             if (analysis.app.readIssues.isNotEmpty()) {
                 InfoBanner(
