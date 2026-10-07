@@ -17,6 +17,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.noise.applens.navigation.AppNavigator
 import com.noise.applens.navigation.Screen
 import com.noise.applens.state.AppLensViewModel
+import com.noise.applens.ui.apps.AppListScreen
 import com.noise.applens.ui.dashboard.DashboardScreen
 
 /**
@@ -36,15 +37,30 @@ fun AppLensApp(viewModel: AppLensViewModel) {
         when (val screen = navigator.current) {
             Screen.Dashboard -> DashboardScreen(
                 state = state,
-                onOpenApps = { filter -> navigator.navigateTo(Screen.AppList(filter)) },
+                onOpenApps = { filter ->
+                    viewModel.openList(filter)
+                    navigator.navigateTo(Screen.AppList(filter))
+                },
                 onRetry = { viewModel.refresh(force = true) },
                 modifier = Modifier.padding(padding),
             )
 
-            is Screen.AppList -> PendingScreen(
-                title = "Applications",
-                modifier = Modifier.padding(padding),
-            )
+            is Screen.AppList -> {
+                val listState by viewModel.listState.collectAsStateWithLifecycle()
+                AppListScreen(
+                    analyses = state.analyses,
+                    listState = listState,
+                    iconLoader = viewModel::loadIcon,
+                    onBack = { navigator.pop() },
+                    onFilterChange = viewModel::setListFilter,
+                    onQueryChange = viewModel::setListQuery,
+                    onSortChange = viewModel::setListSort,
+                    onOpenApp = { packageName ->
+                        navigator.navigateTo(Screen.AppDetail(packageName))
+                    },
+                    modifier = Modifier.padding(padding),
+                )
+            }
 
             is Screen.AppDetail -> PendingScreen(
                 title = "Application details",

@@ -8,6 +8,8 @@ import com.noise.applens.data.AppIconCache
 import com.noise.applens.data.AppIndexStore
 import com.noise.applens.domain.analysis.AppAnalysis
 import com.noise.applens.domain.analysis.AppAnalysisEngine
+import com.noise.applens.domain.analysis.AppFilter
+import com.noise.applens.domain.analysis.AppSort
 import com.noise.applens.domain.model.InstalledApp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -123,6 +125,28 @@ class AppLensViewModel(application: Application) : AndroidViewModel(application)
 
     /** O(1) lookup of the derived analysis used by detail, list and comparison screens. */
     fun analysis(packageName: String): AppAnalysis? = analysisByPackage[packageName]
+
+    // ------------------------------------------------------------------------------- list state
+
+    private val _listState = MutableStateFlow(ListUiState())
+    val listState: StateFlow<ListUiState> = _listState.asStateFlow()
+
+    /** Selects the filter used when the list is opened from an entry point. */
+    fun openList(filter: AppFilter = AppFilter.ALL) {
+        _listState.update { it.copy(filter = filter) }
+    }
+
+    fun setListFilter(filter: AppFilter) {
+        _listState.update { it.copy(filter = filter) }
+    }
+
+    fun setListQuery(query: String) {
+        _listState.update { it.copy(query = query) }
+    }
+
+    fun setListSort(sort: AppSort) {
+        _listState.update { it.copy(sort = sort) }
+    }
 
     /** Search over the indexed inventory (spec §13). */
     fun search(query: String): List<InstalledApp> = indexStore.search(query)
