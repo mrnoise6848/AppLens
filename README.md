@@ -1,56 +1,49 @@
 # AppLens
 
-**Find which installed Android apps deserve a closer look—and see the evidence behind every reason.**
+**Which apps on your phone are worth a closer look?**
 
-An installed app's permission list, target Android version, installer and package size are useful facts, but inspecting them one app at a time makes it difficult to prioritize a review. AppLens brings those facts into a local inventory and turns observable metadata into explicit reasons to investigate.
+A permission list tells you what an app requests. It takes more work to connect that list with its target Android version, update history, installer and package details—especially across a phone full of apps.
 
-The result is a review workflow: scan → filter apps that need attention → inspect contributing factors → compare apps → open Android's settings to act. It does not make malware or trust judgments.
+AppLens brings that information into one local inventory. It highlights reasons to review an app, explains every contribution to its review score, and lets you compare two apps before opening Android settings to act.
 
-## From metadata to a review decision
+## Open an app. Follow the reasons.
 
-The dashboard summarizes installed packages, including system apps. Search, filters and sorting narrow the inventory; detail screens group permissions and expose technical metadata, signing information and manifest-based library evidence. A previous-scan snapshot shows added, removed and updated packages.
+Start with the dashboard, narrow the inventory by name or filter, then open **Why review?** Permissions are grouped by purpose, with grant state shown separately from requested capability. Technical details include signing information, ABIs, split APKs and manifest-based library evidence.
 
-The most important output is **“Why review?”** Each signal has a reason and weight. For example, a declared background-location permission contributes 20 points; a debuggable build contributes 15. Location rules select the strongest applicable form rather than counting all three forms.
+The review rules are concrete:
 
-```text
-PackageManager metadata + requested permissions + device API + current time
-    → deterministic review rules
-    → min(100, sum of factor weights)
-    → visible factor breakdown and review reasons
-```
+| Observed fact | Score contribution | Why it appears |
+|---|---:|---|
+| Requests background location | +20 | A capability worth checking against the app's purpose |
+| Built as debuggable | +15 | A build configuration worth investigating |
+| Requests microphone access | +14 | Sensitive access that deserves context |
+| Targets more than two API levels behind the device | +10 | An older platform target to review |
 
-The separate dashboard gate flags any high-priority signal or at least two signals. The score concerns requested capabilities, regardless of whether runtime permission is granted. Time-dependent signals can change as an app's last update ages. Full weights and thresholds: [scoring rules](docs/scoring.md).
+The score is the sum of applicable factors, capped at 100. Location rules use the strongest requested form instead of counting all forms. A separate dashboard rule flags an app when it has a high-priority signal or at least two signals.
 
-## Engineering choices that keep the evidence inspectable
+**This is a review priority, not a security verdict.** A high score explains where to look; it does not establish harmful behavior. [All rules and thresholds](docs/scoring.md) are documented alongside the [implementation](app/src/main/java/com/noise/applens/domain/review/WhyReviewRules.kt).
 
-- **Fresh platform data:** `PackageManager` supplies the inventory. The JSON snapshot is a comparison baseline, not an alternative authority for installed packages.
-- **Partial scan recovery:** discovery runs on an IO dispatcher, checks cancellation between packages and records individual read failures without discarding the rest of the inventory. Details handle packages removed during inspection.
-- **Bounded UI work:** a normalized search index is built per scan; icons load lazily into a 150-entry cache. These are implementation choices, not measured performance claims.
-- **Evidence strength stays visible:** library detection uses manifest evidence and confidence levels. Special-access permissions are not presented as ordinary granted/denied runtime permissions.
+## An inventory that follows the device
 
-A single Compose module separates screens, ViewModel state, pure analysis and Android readers. This boundary makes the score and comparison logic inspectable without burying it in UI code. See [architecture](docs/architecture.md) and [design decisions](docs/decisions/).
+`PackageManager` supplies a fresh inventory, including system packages. A cached snapshot records added, removed and updated apps since the previous scan. Individual package-read failures are collected without discarding the rest of the scan, and details handle an app being uninstalled during inspection.
 
-## Privacy and limits
+Search uses an index built once per scan. Icons load on demand into a 150-entry cache. Pure scoring, search and comparison logic sit apart from Android readers and Compose screens, keeping the reasoning easy to inspect. [Architecture](docs/architecture.md) · [Design decisions](docs/decisions/)
 
-The manifest requests `QUERY_ALL_PACKAGES` and declares no `INTERNET` permission. Analysis runs locally; the scan baseline is stored in the app's cache directory. See [privacy details](docs/privacy.md).
+## Run AppLens
 
-- Metadata describes declared capabilities, not observed runtime behavior or proof of misuse.
-- Package size covers APKs, not application data. Library evidence cannot establish every bundled SDK.
-- Android 10 / API 29 or newer is required. Broad package visibility would need justification for Google Play distribution; sideloading is the documented workflow.
-- ViewModel state survives rotation, but navigation and searches are not restored after process death. Only the previous scan is retained.
-- No product screenshots or measured scan-performance results are included yet.
-
-## Run and inspect
-
-Open the project in Android Studio with the SDK and toolchain versions declared in the Gradle files, or build and install:
+Android 10 / API 29 or newer. Open the project in Android Studio with the configured SDK/toolchain, or:
 
 ```bash
 ./gradlew assembleDebug
 adb install app/build/outputs/apk/debug/app-debug.apk
 ```
 
-On a device, verify discovery, permission states, factor breakdowns, comparisons and scan differences against Android's own app settings. This README review verified source behavior; it does not establish device performance or a completed manual acceptance pass.
+Scan, inspect an app's factor breakdown, compare it with another app, then revisit the dashboard after an install or update. Check the reported permission state against Android's own settings.
 
-Source entry points: [discovery](app/src/main/java/com/noise/applens/data/AppDiscoveryDataSource.kt), [review rules](app/src/main/java/com/noise/applens/domain/review/WhyReviewRules.kt), [score calculation](app/src/main/java/com/noise/applens/domain/score/ReviewScore.kt).
+## Data and platform boundaries
 
-No license is specified in this repository.
+Analysis runs on the device. The manifest declares `QUERY_ALL_PACKAGES` and no `INTERNET` permission; the previous-scan baseline lives in the app's cache directory. [Privacy details](docs/privacy.md)
+
+Signals describe metadata and requested capabilities, not observed runtime behavior. Special access and library detection have platform/evidence limits. Package size covers APKs rather than application data. Only one previous scan is retained; navigation survives rotation but not process death. Sideloading is the documented distribution route; Play distribution would require package-visibility review.
+
+Device acceptance checks and measured scan-performance results are still needed. No project license is specified.
