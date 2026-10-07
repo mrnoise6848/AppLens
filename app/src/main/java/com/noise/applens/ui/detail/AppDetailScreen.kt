@@ -14,9 +14,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -28,6 +33,7 @@ import com.noise.applens.ui.components.AppIcon
 import com.noise.applens.ui.components.InfoBanner
 import com.noise.applens.ui.components.ScreenHeader
 import com.noise.applens.ui.components.SectionTitle
+import com.noise.applens.util.SettingsIntents
 import com.noise.applens.util.formatBytes
 import com.noise.applens.util.formatRelativeTime
 import com.noise.applens.util.formatTimestamp
@@ -75,6 +81,7 @@ fun AppDetailScreen(
         ) {
             DetailSummary(analysis = analysis, iconLoader = iconLoader)
             CompareAction(onClick = onCompare)
+            OpenSettingsAction(packageName = analysis.app.packageName)
             PermissionSection(analysis = analysis)
             SdkSection(app = analysis.app)
             TechnicalSection(
@@ -165,6 +172,41 @@ private fun CompareAction(onClick: () -> Unit) {
         TextButton(onClick = onClick) {
             Text("Compare with another app")
         }
+    }
+}
+
+/**
+ * Hands the user to Android's official application settings page (spec §20).
+ *
+ * AppLens does not offer its own permission modification flow: it explains the situation and
+ * lets Android handle system-level actions.
+ */
+@Composable
+private fun OpenSettingsAction(packageName: String) {
+    val context = LocalContext.current
+    var unavailable by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TextButton(
+            onClick = {
+                unavailable = !SettingsIntents.openAppSettings(context, packageName)
+            },
+        ) {
+            Text("Open Android App Settings")
+        }
+    }
+    if (unavailable) {
+        Text(
+            text = "Android did not open the settings page on this device.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 20.dp),
+        )
     }
 }
 
