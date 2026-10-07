@@ -8,6 +8,8 @@ import com.noise.applens.domain.permission.PermissionAnalyzer
 import com.noise.applens.domain.permission.PermissionCategory
 import com.noise.applens.domain.review.ReviewSignal
 import com.noise.applens.domain.review.SignalType
+import com.noise.applens.domain.score.ReviewScore
+import com.noise.applens.domain.score.ReviewScoreCalculator
 import com.noise.applens.domain.review.WhyReviewRules
 
 /**
@@ -22,6 +24,8 @@ data class AppAnalysis(
     val permissions: List<AppPermission>,
     /** Deterministic reasons to review this application. */
     val signals: List<ReviewSignal>,
+    /** Explainable 0–100 review score derived from [signals]. */
+    val score: ReviewScore,
     /** Result of the explainable "needs review" gate. */
     val needsReview: Boolean,
 ) {
@@ -87,6 +91,7 @@ class AppAnalysisEngine(
             app = app,
             permissions = permissions,
             signals = signals,
+            score = ReviewScoreCalculator.calculate(signals),
             needsReview = rules.needsReview(signals),
         )
     }

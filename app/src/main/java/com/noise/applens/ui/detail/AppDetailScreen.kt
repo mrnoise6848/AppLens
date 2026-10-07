@@ -69,6 +69,7 @@ fun AppDetailScreen(
                 .padding(bottom = 32.dp),
         ) {
             DetailSummary(analysis = analysis, iconLoader = iconLoader)
+            WhyReviewSection(analysis = analysis)
             PermissionSection(analysis = analysis)
 
             if (analysis.app.readIssues.isNotEmpty()) {
