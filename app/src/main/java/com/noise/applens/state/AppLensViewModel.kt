@@ -6,10 +6,12 @@ import androidx.lifecycle.viewModelScope
 import com.noise.applens.data.AppDiscoveryDataSource
 import com.noise.applens.data.AppIconCache
 import com.noise.applens.data.AppIndexStore
+import com.noise.applens.data.AppTechnicalInfoReader
 import com.noise.applens.domain.analysis.AppAnalysis
 import com.noise.applens.domain.analysis.AppAnalysisEngine
 import com.noise.applens.domain.analysis.AppFilter
 import com.noise.applens.domain.analysis.AppSort
+import com.noise.applens.domain.model.AppTechnicalInfo
 import com.noise.applens.domain.model.InstalledApp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +37,7 @@ class AppLensViewModel(application: Application) : AndroidViewModel(application)
     private val indexStore = AppIndexStore(application)
     private val iconCache = AppIconCache(application.packageManager)
     private val analysisEngine = AppAnalysisEngine(application.packageManager)
+    private val technicalInfoReader = AppTechnicalInfoReader(application.packageManager)
 
     private val _uiState = MutableStateFlow(AppLensUiState())
     val uiState: StateFlow<AppLensUiState> = _uiState.asStateFlow()
@@ -133,6 +136,10 @@ class AppLensViewModel(application: Application) : AndroidViewModel(application)
     suspend fun readApp(packageName: String): AppAnalysis? = withContext(Dispatchers.IO) {
         discovery.readPackage(packageName)?.let { analysisEngine.analyze(it) }
     }
+
+    /** Advanced technical metadata, read only when the user expands the section (spec §10). */
+    suspend fun technicalInfo(packageName: String): AppTechnicalInfo? =
+        technicalInfoReader.read(packageName)
 
     // ------------------------------------------------------------------------------- list state
 

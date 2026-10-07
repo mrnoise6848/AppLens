@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.noise.applens.domain.analysis.AppAnalysis
+import com.noise.applens.domain.model.AppTechnicalInfo
 import com.noise.applens.domain.model.InstalledApp
 import com.noise.applens.ui.components.AppIcon
 import com.noise.applens.ui.components.InfoBanner
@@ -40,6 +41,7 @@ import com.noise.applens.util.formatTimestamp
 fun AppDetailScreen(
     analysis: AppAnalysis?,
     iconLoader: (String) -> ImageBitmap?,
+    loadTechnicalInfo: suspend (String) -> AppTechnicalInfo?,
     onBack: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
@@ -71,6 +73,10 @@ fun AppDetailScreen(
             DetailSummary(analysis = analysis, iconLoader = iconLoader)
             PermissionSection(analysis = analysis)
             SdkSection(app = analysis.app)
+            TechnicalSection(
+                packageName = analysis.app.packageName,
+                load = loadTechnicalInfo,
+            )
             WhyReviewSection(analysis = analysis)
 
             if (analysis.app.readIssues.isNotEmpty()) {
