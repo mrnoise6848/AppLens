@@ -3,6 +3,7 @@ package com.noise.applens.data
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import com.noise.applens.domain.model.PermissionGrantState
+import com.noise.applens.domain.permission.PermissionCatalog
 
 /**
  * Resolves the grant state of a declared permission for an arbitrary package.
@@ -10,30 +11,14 @@ import com.noise.applens.domain.model.PermissionGrantState
  * Android exposes this differently across versions, so the result is tri-state: when the platform
  * does not answer reliably we report [PermissionGrantState.UNKNOWN] instead of misrepresenting the
  * permission state (spec §11, §24). Uses only APIs available from `minSdk 29` upwards.
+ *
+ * "Special app access" permissions ([PermissionCatalog.SPECIAL_ACCESS]) are never granted through a
+ * runtime dialog and cannot be read back with `checkPermission`, so they are reported as unknown
+ * here and presented as special access in the UI.
  */
 internal class PermissionGrantResolver(private val packageManager: PackageManager) {
 
-    /**
-     * Permissions that are never granted through the runtime permission dialog and cannot be read
-     * back with `checkPermission`. They are surfaced as "special" in the UI instead of being shown
-     * as denied (spec §11).
-     */
-    private val specialPermissions = setOf(
-        "android.permission.SYSTEM_ALERT_WINDOW",
-        "android.permission.MANAGE_EXTERNAL_STORAGE",
-        "android.permission.REQUEST_INSTALL_PACKAGES",
-        "android.permission.MANAGE_UNKNOWN_APP_SOURCES",
-        "android.permission.PACKAGE_USAGE_STATS",
-        "android.permission.ACCESS_NOTIFICATION_POLICY",
-        "android.permission.WRITE_SETTINGS",
-        "android.permission.SCHEDULE_EXACT_ALARM",
-        "android.permission.USE_EXACT_ALARM",
-        "android.permission.REQUEST_DELETE_PACKAGES",
-        "android.permission.BIND_ACCESSIBILITY_SERVICE",
-        "android.permission.QUERY_ALL_PACKAGES",
-    )
-
-    fun isSpecial(permission: String): Boolean = permission in specialPermissions
+    fun isSpecial(permission: String): Boolean = PermissionCatalog.isSpecial(permission)
 
     /**
      * @param requested permissions declared in the manifest, in declaration order.

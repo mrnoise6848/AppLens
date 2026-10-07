@@ -23,8 +23,8 @@ internal class AppMetadataReader(private val packageManager: PackageManager) {
         val issues = mutableListOf<String>()
 
         val label = runCatching {
-            packageManager.getApplicationLabel(applicationInfo)?.toString()
-                ?.takeIf { it.isNotBlank() }
+            packageManager.getApplicationLabel(applicationInfo).toString()
+                .takeIf { it.isNotBlank() }
                 ?: packageInfo.packageName
         }.getOrElse {
             issues += "Label could not be read"

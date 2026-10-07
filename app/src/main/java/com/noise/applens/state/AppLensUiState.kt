@@ -1,5 +1,7 @@
 package com.noise.applens.state
 
+import com.noise.applens.domain.analysis.AppAnalysis
+import com.noise.applens.domain.analysis.InventorySummary
 import com.noise.applens.domain.model.AppSnapshot
 import com.noise.applens.domain.model.DiscoveryFailure
 import com.noise.applens.domain.model.InstalledApp
@@ -42,6 +44,10 @@ data class AppLensUiState(
     val scan: ScanPhase = ScanPhase.Idle,
     /** Current inventory, label-sorted. Empty until the first scan completes. */
     val apps: List<InstalledApp> = emptyList(),
+    /** Deterministic per-application analysis, aligned 1:1 with [apps]. */
+    val analyses: List<AppAnalysis> = emptyList(),
+    /** Dashboard counters, all derived from [analyses]. `null` until the first completed scan. */
+    val summary: InventorySummary? = null,
     /** Packages that could not be read during the last scan. */
     val failures: List<DiscoveryFailure> = emptyList(),
     /** Snapshot taken by the previous run, used for change detection only. */

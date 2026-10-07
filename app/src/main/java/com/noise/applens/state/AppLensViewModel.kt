@@ -6,12 +6,16 @@ import androidx.lifecycle.viewModelScope
 import com.noise.applens.data.AppDiscoveryDataSource
 import com.noise.applens.data.AppIconCache
 import com.noise.applens.data.AppIndexStore
+import com.noise.applens.domain.analysis.AppAnalysis
+import com.noise.applens.domain.analysis.AppAnalysisEngine
 import com.noise.applens.domain.model.InstalledApp
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Composition root of AppLens: owns the inventory index, the scan and the icon cache.
@@ -28,9 +32,13 @@ class AppLensViewModel(application: Application) : AndroidViewModel(application)
     private val discovery = AppDiscoveryDataSource(application)
     private val indexStore = AppIndexStore(application)
     private val iconCache = AppIconCache(application.packageManager)
+    private val analysisEngine = AppAnalysisEngine(application.packageManager)
 
     private val _uiState = MutableStateFlow(AppLensUiState())
     val uiState: StateFlow<AppLensUiState> = _uiState.asStateFlow()
+
+    /** packageName → analysis, rebuilt with every completed scan. */
+    private var analysisByPackage: Map<String, AppAnalysis> = emptyMap()
 
     init {
         // Load the previous snapshot for change detection; a missing/corrupt cache is not an error.
@@ -77,6 +85,14 @@ class AppLensViewModel(application: Application) : AndroidViewModel(application)
             // Rebuild the index from PackageManager data.
             indexStore.replaceAll(discovered.apps)
             invalidateIcons()
+
+            // Derived analysis (permissions, review signals, dashboard counters).
+            val analyses = withContext(Dispatchers.Default) {
+                analysisEngine.analyzeAll(discovered.apps)
+            }
+            val summary = analysisEngine.summarize(analyses)
+            analysisByPackage = analyses.associateBy { it.app.packageName }
+
             val diff = snapshotBefore?.let { indexStore.diffAgainst(it) }
             val written = indexStore.persistSnapshot(discovered.apps)
 
@@ -87,6 +103,8 @@ class AppLensViewModel(application: Application) : AndroidViewModel(application)
                         elapsedMillis = discovered.elapsedMillis,
                     ),
                     apps = discovered.apps,
+                    analyses = analyses,
+                    summary = summary,
                     failures = discovered.failures,
                     previousSnapshot = written,
                     diff = diff,
@@ -102,6 +120,9 @@ class AppLensViewModel(application: Application) : AndroidViewModel(application)
 
     /** O(1) lookup used by the detail and comparison screens. */
     fun app(packageName: String): InstalledApp? = indexStore.find(packageName)
+
+    /** O(1) lookup of the derived analysis used by detail, list and comparison screens. */
+    fun analysis(packageName: String): AppAnalysis? = analysisByPackage[packageName]
 
     /** Search over the indexed inventory (spec §13). */
     fun search(query: String): List<InstalledApp> = indexStore.search(query)
