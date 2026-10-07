@@ -212,7 +212,12 @@ private fun OpenSettingsAction(packageName: String) {
 
 /** Generic label/value row used by every technical section of the detail screen. */
 @Composable
-fun DetailRow(label: String, value: String, secondary: String? = null, modifier: Modifier = Modifier) {
+fun DetailRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    secondary: String? = null,
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()

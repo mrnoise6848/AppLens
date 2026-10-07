@@ -5,8 +5,11 @@
     <!-- Package visibility: AppLens is a local application-inventory tool and must enumerate every
          installed package, including non-launcher and system packages. A <queries> intent filter
          for MAIN/LAUNCHER would only expose launcher apps and make the inventory incomplete.
-         Decision: docs/decisions/002-package-visibility-configuration.md -->
-    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+         Decision: docs/decisions/002-package-visibility-configuration.md
+         (lint QueryAllPackagesPermission suppressed because this is the documented intent). -->
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
 
     <application
         android:allowBackup="true"

@@ -140,13 +140,21 @@ class AppTechnicalInfoReader(private val packageManager: PackageManager) {
             sha256Hex(runCatching { signature.toByteArray() }.getOrNull() ?: return null)
         }
 
+        // SigningInfo#getSchemeVersion is only available from API 35; below that the signing
+        // scheme version is reported as unknown rather than guessed (spec §15, §25).
+        val schemeVersion = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            runCatching { signingInfo.schemeVersion }.getOrNull() ?: 0
+        } else {
+            0
+        }
+
         return SigningSummary(
             sha256 = fingerprints,
             signerCount = signers.size,
             hasMultipleSigners = runCatching { signingInfo.hasMultipleSigners() }.getOrNull() ?: false,
             hasPastSigningCertificates = runCatching { signingInfo.hasPastSigningCertificates() }
                 .getOrNull() ?: false,
-            schemeVersion = runCatching { signingInfo.schemeVersion }.getOrNull() ?: 0,
+            schemeVersion = schemeVersion,
         )
     }
 
