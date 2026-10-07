@@ -25,6 +25,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,6 +33,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -40,6 +43,7 @@ import com.noise.applens.domain.analysis.AppAnalysis
 import com.noise.applens.domain.analysis.AppFilter
 import com.noise.applens.domain.analysis.AppListQuery
 import com.noise.applens.domain.analysis.AppSort
+import com.noise.applens.domain.analysis.SearchIndex
 import com.noise.applens.state.ListUiState
 import com.noise.applens.ui.components.AppIcon
 import com.noise.applens.ui.components.ScreenHeader
@@ -57,21 +61,34 @@ import com.noise.applens.util.pluralize
 fun AppListScreen(
     analyses: List<AppAnalysis>,
     listState: ListUiState,
+    index: SearchIndex,
     iconLoader: (String) -> ImageBitmap?,
     onBack: () -> Unit,
     onFilterChange: (AppFilter) -> Unit,
     onQueryChange: (String) -> Unit,
     onSortChange: (AppSort) -> Unit,
     onOpenApp: (String) -> Unit,
+    onFocusSearch: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val results = remember(analyses, listState) {
+    val results = remember(analyses, listState, index) {
+        // Ranked matches come from the precomputed index; every keystroke only re-scores it,
+        // so the list stays responsive with a large inventory (spec §13).
         AppListQuery.apply(
             analyses = analyses,
             filter = listState.filter,
             query = listState.query,
             sort = listState.sort,
+            index = index,
         )
+    }
+
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(listState.focusSearch) {
+        if (listState.focusSearch) {
+            focusRequester.requestFocus()
+            onFocusSearch()
+        }
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -88,11 +105,12 @@ fun AppListScreen(
         OutlinedTextField(
             value = listState.query,
             onValueChange = onQueryChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
             placeholder = { Text("Search by name or package") },
             singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .focusRequester(focusRequester),
         )
 
         FilterChipRow(

@@ -42,6 +42,10 @@ fun AppLensApp(viewModel: AppLensViewModel) {
                     viewModel.openList(filter)
                     navigator.navigateTo(Screen.AppList(filter))
                 },
+                onSearch = {
+                    viewModel.openList(focusSearch = true)
+                    navigator.navigateTo(Screen.AppList())
+                },
                 onRetry = { viewModel.refresh(force = true) },
                 modifier = Modifier.padding(padding),
             )
@@ -51,6 +55,7 @@ fun AppLensApp(viewModel: AppLensViewModel) {
                 AppListScreen(
                     analyses = state.analyses,
                     listState = listState,
+                    index = viewModel.searchIndex,
                     iconLoader = viewModel::loadIcon,
                     onBack = { navigator.pop() },
                     onFilterChange = viewModel::setListFilter,
@@ -59,6 +64,7 @@ fun AppLensApp(viewModel: AppLensViewModel) {
                     onOpenApp = { packageName ->
                         navigator.navigateTo(Screen.AppDetail(packageName))
                     },
+                    onFocusSearch = viewModel::clearFocusSearch,
                     modifier = Modifier.padding(padding),
                 )
             }

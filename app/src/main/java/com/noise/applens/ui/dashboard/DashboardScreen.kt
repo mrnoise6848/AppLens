@@ -43,6 +43,7 @@ import com.noise.applens.util.pluralize
 fun DashboardScreen(
     state: AppLensUiState,
     onOpenApps: (AppFilter) -> Unit,
+    onSearch: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -50,7 +51,7 @@ fun DashboardScreen(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(top = 12.dp, bottom = 32.dp),
     ) {
-        item { DashboardHeader() }
+        item { DashboardHeader(onSearch = onSearch) }
 
         when (val scan = state.scan) {
             ScanPhase.Idle -> item { ScanningState(percent = 0, read = 0, total = 0) }
@@ -173,7 +174,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.readyContent(
 }
 
 @Composable
-private fun DashboardHeader() {
+private fun DashboardHeader(onSearch: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
         Text(
             text = "AppLens",
@@ -185,8 +186,15 @@ private fun DashboardHeader() {
                 "Everything is analysed on this device.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp),
+            modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
         )
+        // Search entry point: opens the list with the cursor already in the search field.
+        TextButton(
+            onClick = onSearch,
+            modifier = Modifier.fillMaxWidth().padding(start = 0.dp, bottom = 8.dp),
+        ) {
+            Text("Search applications")
+        }
     }
 }
 

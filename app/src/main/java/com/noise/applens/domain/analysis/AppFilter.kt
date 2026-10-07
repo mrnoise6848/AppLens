@@ -21,6 +21,8 @@ enum class AppFilter(val label: String) {
 
 /** Sort orders offered on the application list (spec §10). */
 enum class AppSort(val label: String) {
+    /** Default: best matches first while searching, name order otherwise. */
+    BEST_MATCH("Best match"),
     NAME("Name (A–Z)"),
     SIZE("Largest size"),
     RECENTLY_UPDATED("Recently updated"),

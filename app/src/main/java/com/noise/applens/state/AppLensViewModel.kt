@@ -12,6 +12,7 @@ import com.noise.applens.domain.analysis.AppAnalysis
 import com.noise.applens.domain.analysis.AppAnalysisEngine
 import com.noise.applens.domain.analysis.AppFilter
 import com.noise.applens.domain.analysis.AppSort
+import com.noise.applens.domain.analysis.SearchIndex
 import com.noise.applens.domain.library.LibraryAnalyzer
 import com.noise.applens.domain.model.AppTechnicalInfo
 import com.noise.applens.domain.model.InstalledApp
@@ -49,6 +50,10 @@ class AppLensViewModel(application: Application) : AndroidViewModel(application)
 
     /** packageName → analysis, rebuilt with every completed scan. */
     private var analysisByPackage: Map<String, AppAnalysis> = emptyMap()
+
+    /** Normalized search index, rebuilt with every completed scan (spec §13). */
+    var searchIndex: SearchIndex = SearchIndex.empty()
+        private set
 
     init {
         // Load the previous snapshot for change detection; a missing/corrupt cache is not an error.
@@ -102,6 +107,7 @@ class AppLensViewModel(application: Application) : AndroidViewModel(application)
             }
             val summary = analysisEngine.summarize(analyses)
             analysisByPackage = analyses.associateBy { it.app.packageName }
+            searchIndex = SearchIndex.build(analyses)
 
             val diff = snapshotBefore?.let { indexStore.diffAgainst(it) }
             val written = indexStore.persistSnapshot(discovered.apps)
@@ -161,8 +167,8 @@ class AppLensViewModel(application: Application) : AndroidViewModel(application)
     val listState: StateFlow<ListUiState> = _listState.asStateFlow()
 
     /** Selects the filter used when the list is opened from an entry point. */
-    fun openList(filter: AppFilter = AppFilter.ALL) {
-        _listState.update { it.copy(filter = filter) }
+    fun openList(filter: AppFilter = AppFilter.ALL, focusSearch: Boolean = false) {
+        _listState.update { it.copy(filter = filter, focusSearch = focusSearch) }
     }
 
     fun setListFilter(filter: AppFilter) {
@@ -171,6 +177,11 @@ class AppLensViewModel(application: Application) : AndroidViewModel(application)
 
     fun setListQuery(query: String) {
         _listState.update { it.copy(query = query) }
+    }
+
+    /** Called by the list once the cursor has been placed, so it happens only once per opening. */
+    fun clearFocusSearch() {
+        _listState.update { it.copy(focusSearch = false) }
     }
 
     fun setListSort(sort: AppSort) {
@@ -233,9 +244,6 @@ class AppLensViewModel(application: Application) : AndroidViewModel(application)
             }
         }
     }
-
-    /** Search over the indexed inventory (spec §13). */
-    fun search(query: String): List<InstalledApp> = indexStore.search(query)
 
     /** Loads an application icon through the bounded cache; blocking, call off the main thread. */
     fun loadIcon(packageName: String) = iconCache.getOrLoad(packageName)

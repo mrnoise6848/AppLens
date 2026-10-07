@@ -8,16 +8,28 @@ package com.noise.applens.domain.analysis
  */
 object AppListQuery {
 
-    /** Applications matching [filter], then [query], ordered by [sort]. */
+    /**
+     * Applications matching [filter], then [query], ordered by [sort].
+     *
+     * With [AppSort.BEST_MATCH] (the default) and a non-empty [query], results come from the
+     * precomputed [index] in relevance order; every other sort re-orders the matched set.
+     */
     fun apply(
         analyses: List<AppAnalysis>,
         filter: AppFilter = AppFilter.ALL,
         query: String = "",
-        sort: AppSort = AppSort.NAME,
+        sort: AppSort = AppSort.BEST_MATCH,
+        index: SearchIndex? = null,
     ): List<AppAnalysis> {
-        val byFilter = filter.filterBy(analyses)
-        val byQuery = byFilter.search(query.trim())
-        return sort.sort(byQuery)
+        val needle = query.trim()
+        val bestMatch = sort == AppSort.BEST_MATCH
+
+        if (needle.isNotEmpty() && bestMatch && index != null) {
+            return filter.filterBy(index.ranked(needle))
+        }
+
+        val searched = if (needle.isEmpty()) analyses else analyses.search(needle)
+        return sort.sort(filter.filterBy(searched))
     }
 
     /** Number of applications a filter would show — used for the chip counters. */
@@ -47,7 +59,8 @@ object AppListQuery {
     }
 
     private fun AppSort.sort(analyses: List<AppAnalysis>): List<AppAnalysis> = when (this) {
-        AppSort.NAME -> analyses.sortedWith(labelComparator)
+        // Best match with no query is simply name order.
+        AppSort.BEST_MATCH, AppSort.NAME -> analyses.sortedWith(labelComparator)
         AppSort.SIZE -> analyses.sortedWith(
             compareByDescending<AppAnalysis> { it.app.sizeSortKey }.then(labelComparator)
         )

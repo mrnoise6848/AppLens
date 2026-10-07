@@ -19,7 +19,8 @@ import java.util.Locale
  * Responsibilities:
  *  * in-memory index for O(1) detail lookup and stable, pre-sorted rendering
  *  * historical snapshot persisted as JSON so scans can be compared
- *  * search over the indexed data (spec §13)
+ *
+ * Searching runs over `domain/analysis/SearchIndex` (spec §13), not this store.
  *
  * PackageManager remains the source of truth — this store is a cache and a comparison layer, and
  * it is always rebuilt from a fresh scan. See `docs/decisions/003-package-manager-source-of-truth.md`.
@@ -34,34 +35,13 @@ class AppIndexStore(context: Context) {
     @Volatile
     private var sortedApps: List<InstalledApp> = emptyList()
 
-    /** Number of indexed applications. */
-    val size: Int get() = sortedApps.size
-
     /** Replaces the whole index. Preserves the (already label-sorted) incoming order. */
     fun replaceAll(apps: List<InstalledApp>) {
         sortedApps = apps
         byPackage = apps.associateBy { it.packageName }
     }
 
-    fun all(): List<InstalledApp> = sortedApps
-
     fun find(packageName: String): InstalledApp? = byPackage[packageName]
-
-    fun findMany(packageNames: List<String>): List<InstalledApp> =
-        packageNames.mapNotNull { byPackage[it] }
-
-    /**
-     * Case-insensitive search over application label and package name (spec §13).
-     * Runs against the in-memory index, so it stays responsive with large inventories.
-     */
-    fun search(query: String): List<InstalledApp> {
-        val needle = query.trim()
-        if (needle.isEmpty()) return sortedApps
-        return sortedApps.filter { app ->
-            app.label.contains(needle, ignoreCase = true) ||
-                app.packageName.contains(needle, ignoreCase = true)
-        }
-    }
 
     // --------------------------------------------------------------------- snapshot persistence
 
