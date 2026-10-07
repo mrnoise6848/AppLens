@@ -177,6 +177,63 @@ class AppLensViewModel(application: Application) : AndroidViewModel(application)
         _listState.update { it.copy(sort = sort) }
     }
 
+    // ------------------------------------------------------------------------------ compare state
+
+    private val _compareState = MutableStateFlow(CompareUiState())
+    val compareState: StateFlow<CompareUiState> = _compareState.asStateFlow()
+
+    /**
+     * Opens the comparison screen. When [first] is provided the screen goes straight to picking the
+     * opposing application; otherwise it starts with the first slot.
+     */
+    fun openCompare(first: String? = null, second: String? = null) {
+        _compareState.update { current ->
+            val left = first ?: current.first
+            val right = second ?: current.second
+            val duplicated = left != null && left == right
+            val cleanRight = if (duplicated) null else right
+
+            CompareUiState(
+                first = left,
+                second = cleanRight,
+                selecting = when {
+                    left == null -> CompareSide.FIRST
+                    cleanRight == null -> CompareSide.SECOND
+                    else -> null
+                },
+            )
+        }
+    }
+
+    fun selectCompareSide(side: CompareSide) {
+        _compareState.update { it.copy(selecting = side) }
+    }
+
+    fun closeComparePicker() {
+        _compareState.update { it.copy(selecting = null) }
+    }
+
+    /** Assigns [packageName] to the slot currently being picked, never to both slots. */
+    fun selectCompareApp(packageName: String) {
+        _compareState.update { current ->
+            when (current.selecting) {
+                CompareSide.FIRST -> current.copy(
+                    first = packageName,
+                    second = current.second?.takeIf { it != packageName },
+                    selecting = null,
+                )
+
+                CompareSide.SECOND -> current.copy(
+                    second = packageName,
+                    first = current.first?.takeIf { it != packageName },
+                    selecting = null,
+                )
+
+                null -> current
+            }
+        }
+    }
+
     /** Search over the indexed inventory (spec §13). */
     fun search(query: String): List<InstalledApp> = indexStore.search(query)
 

@@ -45,6 +45,7 @@ fun AppDetailScreen(
     loadTechnicalInfo: suspend (String) -> AppTechnicalInfo?,
     loadLibraries: suspend (String) -> List<LibraryInfo>,
     onBack: () -> Unit,
+    onCompare: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
     loading: Boolean = false,
@@ -73,6 +74,7 @@ fun AppDetailScreen(
                 .padding(bottom = 32.dp),
         ) {
             DetailSummary(analysis = analysis, iconLoader = iconLoader)
+            CompareAction(onClick = onCompare)
             PermissionSection(analysis = analysis)
             SdkSection(app = analysis.app)
             TechnicalSection(
@@ -149,6 +151,21 @@ private fun DetailSummary(analysis: AppAnalysis, iconLoader: (String) -> ImageBi
         label = "State",
         value = if (app.isEnabled) "Enabled" else "Disabled",
     )
+}
+
+/** Entry point into the comparison flow (spec §18). */
+@Composable
+private fun CompareAction(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TextButton(onClick = onClick) {
+            Text("Compare with another app")
+        }
+    }
 }
 
 /** Generic label/value row used by every technical section of the detail screen. */
