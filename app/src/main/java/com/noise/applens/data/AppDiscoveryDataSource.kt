@@ -1,6 +1,8 @@
 package com.noise.applens.data
 
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import com.noise.applens.domain.model.DiscoveryFailure
 import com.noise.applens.domain.model.DiscoveryResult
 import com.noise.applens.domain.model.InstalledApp
@@ -80,5 +82,25 @@ class AppDiscoveryDataSource(context: Context) {
             failures = failures,
             elapsedMillis = System.currentTimeMillis() - startedAt,
         )
+    }
+
+    /**
+     * Reads a single package straight from PackageManager (spec §27: recover gracefully when an
+     * application is removed while it is being inspected). Returns `null` when the package no
+     * longer exists or cannot be read.
+     */
+    suspend fun readPackage(packageName: String): InstalledApp? = withContext(Dispatchers.IO) {
+        runCatching {
+            val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                packageManager.getPackageInfo(
+                    packageName,
+                    PackageManager.PackageInfoFlags.of(AppMetadataReader.packageInfoFlags().toLong()),
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                packageManager.getPackageInfo(packageName, AppMetadataReader.packageInfoFlags())
+            }
+            reader.read(packageInfo)
+        }.getOrNull()
     }
 }

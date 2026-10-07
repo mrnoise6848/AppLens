@@ -126,6 +126,14 @@ class AppLensViewModel(application: Application) : AndroidViewModel(application)
     /** O(1) lookup of the derived analysis used by detail, list and comparison screens. */
     fun analysis(packageName: String): AppAnalysis? = analysisByPackage[packageName]
 
+    /**
+     * Re-reads a single package from PackageManager (spec §27). Returns `null` when the package is
+     * gone, which the detail screen reports as "removed while inspecting".
+     */
+    suspend fun readApp(packageName: String): AppAnalysis? = withContext(Dispatchers.IO) {
+        discovery.readPackage(packageName)?.let { analysisEngine.analyze(it) }
+    }
+
     // ------------------------------------------------------------------------------- list state
 
     private val _listState = MutableStateFlow(ListUiState())
