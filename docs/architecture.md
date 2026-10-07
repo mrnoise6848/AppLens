@@ -1,7 +1,8 @@
 # AppLens — Architecture
 
-> Status: Phase 1 (Existing Project Inspection & Foundation)
-> Rule: this document describes the **existing** project first, then the minimal extension plan.
+> Status: **all phases implemented** (1–14 + documentation). This document records the existing
+> project first, then the extension as built.
+> Build environment: unchanged from §1.1 — see `docs/decisions/001-preserve-existing-project-architecture.md`.
 
 ---
 
@@ -143,10 +144,10 @@ com.noise.applens
 │   ├── components/                      shared rows/cards/labels
 │   ├── dashboard/                       Phase 4
 │   ├── apps/                            Phase 5 + 13 (list, search, filter, sort)
-│   ├── detail/                          Phase 6, 9, 10
+│   ├── detail/                          Phase 6, 9, 10, 14
 │   ├── compare/                         Phase 12
-│   └── settings/                        Phase 14 entry point
-└── util/                                formatting, API-level guards, date/size helpers
+│   └── components/                      shared icons, headers, badges
+└── util/                                formatting, API-level guards, settings intents
 ```
 
 Files are added, existing files are edited minimally. `ui/theme/*`, `MainActivity.kt` and the Gradle
@@ -280,7 +281,7 @@ need appears).
 | 10 | APK / technical metadata | `data/AppMetadataReader`, expandable detail section |
 | 11 | library inspection | `domain/library/*` |
 | 12 | comparison | `ui/compare/*`, `domain/model/AppComparison` |
-| 13 | search | `data/AppIndexStore` search index + `ui/apps` |
+| 13 | search | `domain/analysis/SearchIndex.kt`, `domain/analysis/AppListQuery.kt`, `ui/apps` |
 | 14 | settings integration | `util/SettingsIntents.kt` + detail UI action |
 | — | documentation & README | `docs/*`, `README.md` |
 | — | final verification | build + tests + lint + manual pass (spec §32) |
