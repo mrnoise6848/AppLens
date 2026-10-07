@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
@@ -91,6 +92,13 @@ fun AppListScreen(
         }
     }
 
+    // A new filter/sort/query is a new result set: start it at the top instead of leaving the
+    // user in the middle of (or below) rows that are no longer relevant.
+    val scrollState = rememberLazyListState()
+    LaunchedEffect(listState.filter, listState.sort, listState.query) {
+        if (scrollState.firstVisibleItemIndex > 0) scrollState.scrollToItem(0)
+    }
+
     Column(modifier = modifier.fillMaxSize()) {
         ScreenHeader(
             title = "Applications",
@@ -139,6 +147,7 @@ fun AppListScreen(
             EmptyResults(hasQuery = listState.hasQuery, onClear = { onQueryChange("") })
         } else {
             LazyColumn(
+                state = scrollState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 24.dp),
             ) {
